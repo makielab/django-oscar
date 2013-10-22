@@ -19,8 +19,11 @@ class ShippingAddress(AbstractShippingAddress):
 
 
 class BillingAddress(AbstractBillingAddress):
-    pass
-    
+
+    @property
+    def city(self):
+        return self.line4
+
 
 class Line(AbstractLine):
     pass
@@ -52,6 +55,3 @@ class PaymentEventType(AbstractPaymentEventType):
 
 class OrderDiscount(AbstractOrderDiscount):
     pass
-
-
-    

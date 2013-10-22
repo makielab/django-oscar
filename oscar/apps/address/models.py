@@ -3,7 +3,10 @@ from oscar.apps.address.abstract_models import (
 
 
 class UserAddress(AbstractUserAddress):
-    pass
+
+    @property
+    def city(self):
+        return self.line4
 
 
 class Country(AbstractCountry):
