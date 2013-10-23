@@ -433,7 +433,8 @@ class Condition(models.Model):
         return self
 
     def __unicode__(self):
-        return self.proxy().__unicode__()
+        # return self.proxy().__unicode__()
+        return _("Condition {0}".format(self.type))
 
     @property
     def description(self):
