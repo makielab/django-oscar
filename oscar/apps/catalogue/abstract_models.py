@@ -404,10 +404,16 @@ class AbstractProduct(models.Model):
         temp.save()
     add_category_from_breadcrumbs.alters_data = True
 
+    @property
     def attribute_summary(self):
-        u"""Return a string of all of a product's attributes"""
-        return ", ".join([
-            attribute.__unicode__() for attribute in self.attributes.all()])
+        """
+        Return a string of all of a product's attributes
+        """
+        pairs = []
+        for value in self.attribute_values.select_related().all():
+            pairs.append("%s: %s" % (value.attribute.name,
+                                     value.value))
+        return ", ".join(pairs)
 
     def get_title(self):
         """
