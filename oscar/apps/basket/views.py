@@ -260,6 +260,7 @@ class BasketView(ModelFormSetView):
 
 
 class BasketAddView(FormView):
+
     """
     Handles the add-to-basket operation, shouldn't be accessed via
     GET because there's nothing sensible to render.

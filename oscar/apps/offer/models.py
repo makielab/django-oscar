@@ -38,6 +38,7 @@ def range_anchor(range):
 
 
 class ConditionalOffer(models.Model):
+
     """
     A conditional offer (eg buy 1, get 10% off)
     """
@@ -82,7 +83,7 @@ class ConditionalOffer(models.Model):
 
     # Some complicated situations require offers to be applied in a set order.
     priority = models.IntegerField(_("Priority"), default=0,
-        help_text=_("The highest priority offers are applied first"))
+                                   help_text=_("The highest priority offers are applied first"))
 
     # AVAILABILITY
 
@@ -100,7 +101,7 @@ class ConditionalOffer(models.Model):
     max_global_applications = models.PositiveIntegerField(
         _("Max global applications"),
         help_text=_("The number of times this offer can be used before it "
-          "is unavailable"), blank=True, null=True)
+                    "is unavailable"), blank=True, null=True)
 
     # Use this field to limit the number of times this offer can be used by a
     # single user.  This only works for signed-in users - it doesn't really
@@ -176,7 +177,7 @@ class ConditionalOffer(models.Model):
 
     def clean(self):
         if (self.start_datetime and self.end_datetime and
-            self.start_datetime > self.end_datetime):
+                self.start_datetime > self.end_datetime):
             raise exceptions.ValidationError(
                 _('End date should be later than start date'))
 
@@ -259,7 +260,7 @@ class ConditionalOffer(models.Model):
         limits = [10000]
         if self.max_user_applications and user:
             limits.append(max(0, self.max_user_applications -
-                          self.get_num_user_applications(user)))
+                              self.get_num_user_applications(user)))
         if self.max_basket_applications:
             limits.append(self.max_basket_applications)
         if self.max_global_applications:
@@ -342,8 +343,8 @@ class ConditionalOffer(models.Model):
             today = now()
             if self.start_datetime and self.end_datetime:
                 desc = _("Available between %(start)s and %(end)s") % {
-                        'start': format_datetime(self.start_datetime),
-                        'end': format_datetime(self.end_datetime)}
+                    'start': format_datetime(self.start_datetime),
+                    'end': format_datetime(self.end_datetime)}
                 is_satisfied = self.start_datetime <= today <= self.end_datetime
             elif self.start_datetime:
                 desc = _("Available from %(start)s") % {
@@ -407,6 +408,8 @@ class Condition(models.Model):
 
     proxy_class = models.CharField(_("Custom class"), null=True, blank=True,
                                    max_length=255, unique=True, default=None)
+
+    exclusive = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("Condition")
@@ -682,7 +685,7 @@ class Benefit(models.Model):
         for line in basket.all_lines():
             product = line.product
             if (not range.contains(product) or
-                not self.can_apply_benefit(product)):
+                    not self.can_apply_benefit(product)):
                 continue
             price = line.unit_price_incl_tax
             if not price:
@@ -700,6 +703,7 @@ class Benefit(models.Model):
 
 
 class Range(models.Model):
+
     """
     Represents a range of products that can be used within an offer
     """
@@ -745,7 +749,7 @@ class Range(models.Model):
         # the tests that require more database queries.
 
         if settings.OSCAR_OFFER_BLACKLIST_PRODUCT and \
-            settings.OSCAR_OFFER_BLACKLIST_PRODUCT(product):
+                settings.OSCAR_OFFER_BLACKLIST_PRODUCT(product):
             return False
 
         # Delegate to a proxy class if one is provided
@@ -809,6 +813,7 @@ class Range(models.Model):
 
 
 class CountCondition(Condition):
+
     """
     An offer condition dependent on the NUMBER of matching items from the
     basket.
@@ -835,10 +840,13 @@ class CountCondition(Condition):
         """
         Determines whether a given basket meets this condition
         """
+        import pdb
+        pdb.set_trace()
+
         num_matches = 0
         for line in basket.all_lines():
             if (self.can_apply_condition(line.product)
-                and line.quantity_without_discount > 0):
+                    and line.quantity_without_discount > 0):
                 num_matches += line.quantity_without_discount
             if num_matches >= self.value:
                 return True
@@ -850,7 +858,7 @@ class CountCondition(Condition):
         num_matches = 0
         for line in basket.all_lines():
             if (self.can_apply_condition(line.product)
-                and line.quantity_without_discount > 0):
+                    and line.quantity_without_discount > 0):
                 num_matches += line.quantity_without_discount
         self._num_matches = num_matches
         return num_matches
@@ -864,7 +872,7 @@ class CountCondition(Condition):
         delta = self.value - num_matches
         return ungettext('Buy %(delta)d more product from %(range)s',
                          'Buy %(delta)d more products from %(range)s', delta) % {
-                            'delta': delta, 'range': self.range}
+            'delta': delta, 'range': self.range}
 
     def consume_items(self, basket, affected_lines):
         """
@@ -895,6 +903,7 @@ class CountCondition(Condition):
 
 
 class CoverageCondition(Condition):
+
     """
     An offer condition dependent on the number of DISTINCT matching items from the basket.
     """
@@ -945,7 +954,7 @@ class CoverageCondition(Condition):
         delta = self.value - self._get_num_covered_products(basket)
         return ungettext('Buy %(delta)d more product from %(range)s',
                          'Buy %(delta)d more products from %(range)s', delta) % {
-                         'delta': delta, 'range': self.range}
+            'delta': delta, 'range': self.range}
 
     def is_partially_satisfied(self, basket):
         return 0 < self._get_num_covered_products(basket) < self.value
@@ -993,6 +1002,7 @@ class CoverageCondition(Condition):
 
 
 class ValueCondition(Condition):
+
     """
     An offer condition dependent on the VALUE of matching items from the
     basket.
@@ -1019,11 +1029,15 @@ class ValueCondition(Condition):
         """
         Determine whether a given basket meets this condition
         """
+
+        import pdb
+        pdb.set_trace()
+
         value_of_matches = D('0.00')
         for line in basket.all_lines():
             product = line.product
             if (self.can_apply_condition(product) and product.has_stockrecord
-                and line.quantity_without_discount > 0):
+                    and line.quantity_without_discount > 0):
                 price = line.unit_price_incl_tax
                 value_of_matches += price * int(line.quantity_without_discount)
             if value_of_matches >= self.value:
@@ -1037,7 +1051,7 @@ class ValueCondition(Condition):
         for line in basket.all_lines():
             product = line.product
             if (self.can_apply_condition(product) and product.has_stockrecord
-                and line.quantity_without_discount > 0):
+                    and line.quantity_without_discount > 0):
                 price = line.unit_price_incl_tax
                 value_of_matches += price * int(line.quantity_without_discount)
         self._value_of_matches = value_of_matches
@@ -1114,6 +1128,7 @@ class ApplicationResult(object):
 
 
 class BasketDiscount(ApplicationResult):
+
     """
     For when an offer application leads to a simple discount off the basket's
     total
@@ -1133,6 +1148,7 @@ ZERO_DISCOUNT = BasketDiscount(D('0.00'))
 
 
 class ShippingDiscount(ApplicationResult):
+
     """
     For when an offer application leads to a discount from the shipping cost
     """
@@ -1144,6 +1160,7 @@ SHIPPING_DISCOUNT = ShippingDiscount()
 
 
 class PostOrderAction(ApplicationResult):
+
     """
     For when an offer condition is met but the benefit is deferred until after
     the order has been placed.  Eg buy 2 books and get 100 loyalty points.
@@ -1161,6 +1178,7 @@ class PostOrderAction(ApplicationResult):
 
 
 class PercentageDiscountBenefit(Benefit):
+
     """
     An offer benefit that gives a percentage discount
     """
@@ -1208,6 +1226,7 @@ class PercentageDiscountBenefit(Benefit):
 
 
 class AbsoluteDiscountBenefit(Benefit):
+
     """
     An offer benefit that gives an absolute discount
     """
@@ -1281,6 +1300,7 @@ class AbsoluteDiscountBenefit(Benefit):
 
 
 class FixedPriceBenefit(Benefit):
+
     """
     An offer benefit that gives the items in the condition for a
     fixed price.  This is useful for "bundle" offers.
