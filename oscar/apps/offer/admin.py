@@ -8,7 +8,7 @@ Range = get_model('offer', 'Range')
 
 
 class ConditionAdmin(admin.ModelAdmin):
-    list_display = ('type', 'value', 'range')
+    list_display = ('type', 'value', 'range', 'exclusive')
 
 
 class BenefitAdmin(admin.ModelAdmin):
@@ -28,6 +28,8 @@ class ConditionalOfferAdmin(admin.ModelAdmin):
             'fields': ('total_discount', 'num_orders')
         }),
     )
+    raw_id_fields = ('condition', 'benefit')
+
 
 
 admin.site.register(ConditionalOffer, ConditionalOfferAdmin)

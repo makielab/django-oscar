@@ -24,11 +24,13 @@ class Applicator(object):
         are dependent on the user (eg session-based offers).
         """
         offers = self.get_offers(request, basket)
+        #print "Found offers: %s" % (offers,)
         self.apply_offers(basket, offers)
 
     def apply_offers(self, basket, offers):
         applications = results.OfferApplications()
         for offer in offers:
+            #print "Trying to apply offer %s" % (offer,)
             num_applications = 0
             # Keep applying the offer until either
             # (a) We reach the max number of applications for the offer.
@@ -37,6 +39,7 @@ class Applicator(object):
                 result = offer.apply_benefit(basket)
                 num_applications += 1
                 if not result.is_successful:
+                    #print "Offer %s unsuccessful after %s try." % (offer, num_applications)
                     break
                 applications.add(offer, result)
                 if result.is_final:

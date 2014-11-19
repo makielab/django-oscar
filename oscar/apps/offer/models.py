@@ -217,7 +217,9 @@ class ConditionalOffer(models.Model):
         return self.get_max_applications(user) > 0
 
     def is_condition_satisfied(self, basket):
-        return self.condition.proxy().is_satisfied(basket)
+        sat = self.condition.proxy().is_satisfied(basket)
+        #print "Conditional offer proxy %s is satisfied? %s" % (self.id, sat)
+        return sat
 
     def is_condition_partially_satisfied(self, basket):
         return self.condition.proxy().is_partially_satisfied(basket)
@@ -407,7 +409,7 @@ class Condition(models.Model):
                                  null=True, blank=True)
 
     proxy_class = models.CharField(_("Custom class"), null=True, blank=True,
-                                   max_length=255, unique=True, default=None)
+                                   max_length=255, default=None)
 
     exclusive = models.BooleanField(default=True)
 
@@ -530,7 +532,9 @@ class Benefit(models.Model):
     # A custom benefit class can be used instead.  This means the
     # type/value/max_affected_items fields should all be None.
     proxy_class = models.CharField(_("Custom class"), null=True, blank=True,
-                                   max_length=255, unique=True, default=None)
+                                   max_length=255, default=None)
+
+    exclusive = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("Benefit")
@@ -691,7 +695,7 @@ class Benefit(models.Model):
             if not price:
                 # Avoid zero price products
                 continue
-            if line.quantity_without_discount == 0:
+            if line.quantity_without_discount == 0 and self.exclusive:
                 continue
             line_tuples.append((price, line))
 
@@ -840,16 +844,20 @@ class CountCondition(Condition):
         """
         Determines whether a given basket meets this condition
         """
-        import pdb
-        pdb.set_trace()
+        #import pdb
+        #pdb.set_trace()
 
         num_matches = 0
         for line in basket.all_lines():
-            if (self.can_apply_condition(line.product)
-                    and line.quantity_without_discount > 0):
-                num_matches += line.quantity_without_discount
+            if self.can_apply_condition(line.product):
+                if not self.exclusive:
+                    num_matches += line.quantity
+                elif line.quantity_without_discount > 0:
+                    num_matches += line.quantity_without_discount
             if num_matches >= self.value:
+                #print "Condition %s is satisfied" % (self.id,)
                 return True
+        #print "Condition %s is NOT satisfied" % (self.id,)
         return False
 
     def _get_num_matches(self, basket):
@@ -858,7 +866,7 @@ class CountCondition(Condition):
         num_matches = 0
         for line in basket.all_lines():
             if (self.can_apply_condition(line.product)
-                    and line.quantity_without_discount > 0):
+                    and (line.quantity_without_discount > 0 or not self.exclusive)):
                 num_matches += line.quantity_without_discount
         self._num_matches = num_matches
         return num_matches
@@ -871,8 +879,7 @@ class CountCondition(Condition):
         num_matches = self._get_num_matches(basket)
         delta = self.value - num_matches
         return ungettext('Buy %(delta)d more product from %(range)s',
-                         'Buy %(delta)d more products from %(range)s', delta) % {
-            'delta': delta, 'range': self.range}
+                         'Buy %(delta)d more products from %(range)s', delta) % {'delta': delta, 'range': self.range}
 
     def consume_items(self, basket, affected_lines):
         """
@@ -953,8 +960,7 @@ class CoverageCondition(Condition):
     def get_upsell_message(self, basket):
         delta = self.value - self._get_num_covered_products(basket)
         return ungettext('Buy %(delta)d more product from %(range)s',
-                         'Buy %(delta)d more products from %(range)s', delta) % {
-            'delta': delta, 'range': self.range}
+                         'Buy %(delta)d more products from %(range)s', delta) % {'delta': delta, 'range': self.range}
 
     def is_partially_satisfied(self, basket):
         return 0 < self._get_num_covered_products(basket) < self.value
@@ -1029,9 +1035,6 @@ class ValueCondition(Condition):
         """
         Determine whether a given basket meets this condition
         """
-
-        import pdb
-        pdb.set_trace()
 
         value_of_matches = D('0.00')
         for line in basket.all_lines():
