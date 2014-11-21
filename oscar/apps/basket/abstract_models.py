@@ -635,7 +635,7 @@ class AbstractLine(models.Model):
 
     @property
     def line_price_excl_tax_and_discounts(self):
-        return self.line_price_excl_tax - self._discount * self._tax_ratio
+        return max(Decimal('0.00'), self.line_price_excl_tax - self._discount * self._tax_ratio)
 
     @property
     def line_tax(self):
@@ -649,7 +649,7 @@ class AbstractLine(models.Model):
 
     @property
     def line_price_incl_tax_and_discounts(self):
-        return self.line_price_incl_tax - self._discount
+        return max(Decimal('0.00'), self.line_price_incl_tax - self._discount)
 
     @property
     def description(self):

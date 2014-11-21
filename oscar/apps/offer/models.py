@@ -695,7 +695,7 @@ class Benefit(models.Model):
             if not price:
                 # Avoid zero price products
                 continue
-            if line.quantity_without_discount == 0 and self.exclusive:
+            if line.quantity_without_discount == 0:
                 continue
             line_tuples.append((price, line))
 
@@ -850,9 +850,7 @@ class CountCondition(Condition):
         num_matches = 0
         for line in basket.all_lines():
             if self.can_apply_condition(line.product):
-                if not self.exclusive:
-                    num_matches += line.quantity
-                elif line.quantity_without_discount > 0:
+                if line.quantity_without_discount > 0:
                     num_matches += line.quantity_without_discount
             if num_matches >= self.value:
                 #print "Condition %s is satisfied" % (self.id,)
@@ -866,7 +864,7 @@ class CountCondition(Condition):
         num_matches = 0
         for line in basket.all_lines():
             if (self.can_apply_condition(line.product)
-                    and (line.quantity_without_discount > 0 or not self.exclusive)):
+                    and line.quantity_without_discount > 0):
                 num_matches += line.quantity_without_discount
         self._num_matches = num_matches
         return num_matches

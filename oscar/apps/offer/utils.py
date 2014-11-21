@@ -23,12 +23,33 @@ class Applicator(object):
         The request is passed too as sometimes the available offers
         are dependent on the user (eg session-based offers).
         """
+
+        applicator = results.OfferApplications()
+
         offers = self.get_offers(request, basket)
         #print "Found offers: %s" % (offers,)
-        self.apply_offers(basket, offers)
+        applicator = self.apply_offers(basket, offers, applicator=applicator)
 
-    def apply_offers(self, basket, offers):
-        applications = results.OfferApplications()
+        for line in basket.all_lines():
+            line._affected_quantity = 0
+
+        #import pdb
+        #pdb.set_trace()
+
+        offers = self.get_site_offers()
+        applicator = self.apply_offers(basket, offers, applicator=applicator)
+
+        if applicator is None:
+            applicator = results.OfferApplications()
+
+        basket.offer_applications = applicator
+
+    def apply_offers(self, basket, offers, applicator=None):
+        if applicator is None:
+            applications = results.OfferApplications()
+        else:
+            applications = applicator
+
         for offer in offers:
             #print "Trying to apply offer %s" % (offer,)
             num_applications = 0
@@ -47,7 +68,10 @@ class Applicator(object):
 
         # Store this list of discounts with the basket so it can be
         # rendered in templates
-        basket.offer_applications = applications
+        if not applicator:
+            basket.offer_applications = applications
+        else:
+            return applications
 
     def get_offers(self, request, basket):
         """
@@ -57,13 +81,13 @@ class Applicator(object):
         sophisticated behaviour.  For instance, you could load extra offers
         based on the session or the user type.
         """
-        site_offers = self.get_site_offers()
+        #site_offers = self.get_site_offers()
         basket_offers = self.get_basket_offers(basket, request.user)
         user_offers = self.get_user_offers(request.user)
         session_offers = self.get_session_offers(request)
 
         return list(chain(
-            session_offers, basket_offers, user_offers, site_offers))
+            session_offers, basket_offers, user_offers))
 
     def get_site_offers(self):
         """
