@@ -844,8 +844,6 @@ class CountCondition(Condition):
         """
         Determines whether a given basket meets this condition
         """
-        #import pdb
-        #pdb.set_trace()
 
         num_matches = 0
         for line in basket.all_lines():
