@@ -24,6 +24,8 @@ class Applicator(object):
         are dependent on the user (eg session-based offers).
         """
 
+        basket.reset_offer_applications()
+
         applicator = results.OfferApplications()
 
         offers = self.get_offers(request, basket)
@@ -32,9 +34,6 @@ class Applicator(object):
 
         for line in basket.all_lines():
             line._affected_quantity = 0
-
-        #import pdb
-        #pdb.set_trace()
 
         offers = self.get_site_offers()
         applicator = self.apply_offers(basket, offers, applicator=applicator)
@@ -68,7 +67,7 @@ class Applicator(object):
 
         # Store this list of discounts with the basket so it can be
         # rendered in templates
-        if not applicator:
+        if applicator is None:
             basket.offer_applications = applications
         else:
             return applications
